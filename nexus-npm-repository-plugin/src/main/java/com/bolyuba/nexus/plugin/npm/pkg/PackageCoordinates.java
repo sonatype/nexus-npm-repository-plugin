@@ -58,7 +58,7 @@ class PackageCoordinates {
 
     public static PackageCoordinates coordinatesFromUrl(@Nonnull String requestPath) throws IllegalArgumentException {
         PackageCoordinates coordinates = new PackageCoordinates();
-        final String normalizedPath = requestPath.toLowerCase();
+        final String normalizedPath = requestPath;
         coordinates.path = normalizedPath;
 
         if (RepositoryItemUid.PATH_SEPARATOR.equals(normalizedPath)) {
