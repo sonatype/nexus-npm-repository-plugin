@@ -82,6 +82,12 @@ public class ProxyMetadataServiceImpl
     }
   }
 
+  @Nullable
+  @Override
+  public PackageRoot generateRawPackageRoot(final String packageName) throws IOException {
+    return mayUpdatePackageRoot(packageName);
+  }
+
   @Override
   protected PackageRootIterator doGenerateRegistryRoot(final PackageRequest request) throws IOException {
     // TODO: ContentServlet sets isLocal to paths ending with "/", so registry root will be local!
@@ -158,11 +164,12 @@ public class ProxyMetadataServiceImpl
   // ==
 
   /**
-   * May fetch package root from remote if not found locally, or is found but is expired.
+   * May fetch package root from remote if not found locally, or is found but is expired. The package root returned
+   * document is NOT filtered, so this method should not be used to source documents sent downstream.
    */
   private PackageRoot mayUpdatePackageRoot(final String packageName) throws IOException {
     final long now = System.currentTimeMillis();
-    PackageRoot packageRoot = metadataGenerator.generatePackageRoot(packageName);
+    PackageRoot packageRoot = metadataStore.getPackageByName(npmProxyRepository, packageName);
     if (packageRoot == null || isExpired(packageRoot, now)) {
       packageRoot = proxyMetadataTransport.fetchPackageRoot(npmProxyRepository, packageName, packageRoot);
       if (packageRoot == null) {

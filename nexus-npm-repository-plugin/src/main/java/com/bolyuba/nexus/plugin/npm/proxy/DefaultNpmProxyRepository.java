@@ -1,13 +1,20 @@
 package com.bolyuba.nexus.plugin.npm.proxy;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.content.NpmMimeRulesSource;
 import com.bolyuba.nexus.plugin.npm.metadata.MetadataServiceFactory;
+import com.bolyuba.nexus.plugin.npm.metadata.PackageRoot;
+import com.bolyuba.nexus.plugin.npm.metadata.PackageVersion;
 import com.bolyuba.nexus.plugin.npm.metadata.ProxyMetadataService;
 import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
+import com.google.common.collect.Lists;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.eclipse.sisu.Description;
 
@@ -18,7 +25,11 @@ import org.sonatype.nexus.mime.MimeRulesSource;
 import org.sonatype.nexus.proxy.IllegalOperationException;
 import org.sonatype.nexus.proxy.ItemNotFoundException;
 import org.sonatype.nexus.proxy.LocalStorageException;
+import org.sonatype.nexus.proxy.RemoteAccessException;
+import org.sonatype.nexus.proxy.RemoteStorageEOFException;
+import org.sonatype.nexus.proxy.RemoteStorageException;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
+import org.sonatype.nexus.proxy.StorageException;
 import org.sonatype.nexus.proxy.item.AbstractStorageItem;
 import org.sonatype.nexus.proxy.item.ContentLocator;
 import org.sonatype.nexus.proxy.item.DefaultStorageFileItem;
@@ -200,6 +211,12 @@ public class DefaultNpmProxyRepository
 
     @Override
     public AbstractStorageItem doCacheItem(AbstractStorageItem item) throws LocalStorageException {
+        if (item.getResourceStoreRequest().getRequestContext().containsKey(TARBALL_REQUEST_PATH)) {
+          final String originalRequestPath = (String) item.getResourceStoreRequest().getRequestContext().get(TARBALL_REQUEST_PATH);
+          item.setPath(originalRequestPath);
+          item.getResourceStoreRequest().setRequestPath(originalRequestPath);
+          item.setRepositoryItemUid(createUid(originalRequestPath));
+        }
         try {
             ResourceStoreRequest storeRequest = item.getResourceStoreRequest();
             PackageRequest packageRequest = new PackageRequest(storeRequest);
@@ -222,5 +239,68 @@ public class DefaultNpmProxyRepository
 
     AbstractStorageItem delegateDoRetrieveLocalItem(ResourceStoreRequest storeRequest) throws LocalStorageException, ItemNotFoundException {
         return super.doRetrieveLocalItem(storeRequest);
+    }
+
+    /**
+     * Regex for tarball requests. They are usually in form of {@code /pkgName/-/pkgName-pkgVersion.tgz}, with a catch, that
+     * pkgVersion might be suffixed by some suffix (ie. "beta", "alpha", etc). Groups in regexp: 1. the "packageName",
+     * 2. the complete filename after "/-/" 3. the "packageVersion".
+     */
+    private final static Pattern PATH_PATTERN = Pattern.compile("/([[a-z][A-Z][0-9]-_\\.]+)/-/([[a-z][A-Z][0-9]-_\\.]+-([[0-9]+\\.]+[[a-z][A-Z][0-9]-_\\.]+)\\.tgz)");
+
+    private static final String TARBALL_REMOTE_BASE_URL = "npm.remoteUrl";
+
+    private static final String TARBALL_REQUEST_PATH = "npm.requestPath";
+
+    @Override
+    protected AbstractStorageItem doRetrieveRemoteItem(final ResourceStoreRequest request)
+        throws ItemNotFoundException, RemoteAccessException, StorageException
+    {
+      final Matcher matcher = PATH_PATTERN.matcher(request.getRequestPath());
+      if (matcher.matches()) {
+        final String requestedPackageName = matcher.group(1);
+        final String requestedTarballFilename = matcher.group(2);
+        final String requestedPackageVersion = matcher.group(3);
+        String originalRemoteUrl = null;
+        try {
+          final PackageRoot packageRoot = getMetadataService().generateRawPackageRoot(requestedPackageName);
+          if (packageRoot != null) {
+            for (PackageVersion packageVersion : packageRoot.getVersions().values()) {
+              if (requestedPackageVersion.equals(packageVersion.getVersion())) {
+                originalRemoteUrl = packageVersion.getDistTarball();
+                break;
+              }
+            }
+          }
+        } catch (IOException e) {
+          throw new RemoteStorageException("NPM Metadata service error", e);
+        }
+        if (originalRemoteUrl != null) {
+          log.info("@@@ remoteUrl :: {}", originalRemoteUrl.substring(0, originalRemoteUrl.length() - requestedTarballFilename.length()));
+          log.info("@@@ requestPath :: {}", requestedTarballFilename);
+          request.getRequestContext().put(TARBALL_REMOTE_BASE_URL, originalRemoteUrl.substring(0, originalRemoteUrl.length() - requestedTarballFilename.length()));
+          request.getRequestContext().put(TARBALL_REQUEST_PATH, request.getRequestPath());
+          request.pushRequestPath(requestedTarballFilename);
+        } else {
+          request.pushRequestPath(request.getRequestPath()); // push same just to be on par in finally with pop
+        }
+      }
+
+      try {
+        return super.doRetrieveRemoteItem(request);
+      } finally {
+        if (matcher.matches()) {
+          request.popRequestPath();
+        }
+      }
+    }
+
+    @Override
+    protected List<String> getRemoteUrls(final ResourceStoreRequest request) {
+      if (request.getRequestContext().containsKey(TARBALL_REMOTE_BASE_URL)) {
+        return Lists.newArrayList((String)request.getRequestContext().get(TARBALL_REMOTE_BASE_URL));
+      } else {
+        return super.getRemoteUrls(request);
+      }
     }
 }

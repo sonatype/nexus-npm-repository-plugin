@@ -1,5 +1,9 @@
 package com.bolyuba.nexus.plugin.npm.metadata;
 
+import java.io.IOException;
+
+import javax.annotation.Nullable;
+
 import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 
 /**
@@ -14,4 +18,11 @@ public interface ProxyMetadataService
    * Expires proxy metadata cache. On next request of an expired metadata, refetch will be done from registry.
    */
   boolean expireMetadataCaches(PackageRequest request);
+
+  /**
+   * Returns corresponding package root for given package name in <strong>raw form</strong>, as it was sent to us by
+   * the proxied registry, or {@link null} if no such package.
+   */
+  @Nullable
+  PackageRoot generateRawPackageRoot(String packageName) throws IOException;
 }
