@@ -283,6 +283,7 @@ public class DefaultNpmProxyRepository
           final Tarball tarball = tarballSource.get(this, packageVersion);
           if (tarball!= null) {
             final DefaultStorageFileItem result = new DefaultStorageFileItem(this, request, true, true, tarball);
+            // stash in SHA1 sum as we have it already
             result.getItemContext().put(StorageFileItem.DIGEST_SHA1_KEY, tarball.getSha1sum());
             return result;
           }
