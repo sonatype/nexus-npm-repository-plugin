@@ -29,9 +29,12 @@ import org.sonatype.nexus.proxy.RemoteAccessException;
 import org.sonatype.nexus.proxy.RemoteStorageException;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.StorageException;
+import org.sonatype.nexus.proxy.access.Action;
 import org.sonatype.nexus.proxy.item.AbstractStorageItem;
 import org.sonatype.nexus.proxy.item.ContentLocator;
 import org.sonatype.nexus.proxy.item.DefaultStorageFileItem;
+import org.sonatype.nexus.proxy.item.RepositoryItemUid;
+import org.sonatype.nexus.proxy.item.RepositoryItemUidLock;
 import org.sonatype.nexus.proxy.item.StorageFileItem;
 import org.sonatype.nexus.proxy.item.StorageItem;
 import org.sonatype.nexus.proxy.registry.ContentClass;
@@ -273,30 +276,41 @@ public class DefaultNpmProxyRepository
     protected AbstractStorageItem doRetrieveRemoteItem(final ResourceStoreRequest request)
         throws ItemNotFoundException, RemoteAccessException, StorageException
     {
-      final PackageVersion packageVersion;
+      final RepositoryItemUid itemUid = createUid(request.getRequestPath());
+      final RepositoryItemUidLock itemUidLock = itemUid.getLock();
+      itemUidLock.lock(Action.create);
       try {
-        packageVersion = getPackageVersionForTarballRequest(request);
-      } catch (IOException e) {
-        throw new RemoteStorageException("NPM Metadata service error", e);
-      }
-      if (packageVersion != null) {
+        final PackageVersion packageVersion;
         try {
-          final Tarball tarball = tarballSource.get(this, packageVersion);
-          if (tarball!= null) {
-            final DefaultStorageFileItem result = new DefaultStorageFileItem(this, request, true, true, tarball);
-            // stash in SHA1 sum as we have it already
-            result.getItemContext().put(StorageFileItem.DIGEST_SHA1_KEY, tarball.getSha1sum());
-            return result;
-          }
-          throw new ItemNotFoundException(ItemNotFoundException.reasonFor(request, this,
-              "Request cannot be serviced by NPM proxy %s: tarball for package %s version %s not found", this,
-              packageVersion.getName(), packageVersion.getVersion()));
-        } catch (IOException e) {
-          throw new RemoteStorageException("NPM TarballSource service error", e);
+          packageVersion = getPackageVersionForTarballRequest(request);
         }
-      } else {
-        throw new ItemNotFoundException(ItemNotFoundException.reasonFor(request, this,
-            "Request cannot be serviced by NPM proxy %s: tarball package not found", this));
+        catch (IOException e) {
+          throw new RemoteStorageException("NPM Metadata service error", e);
+        }
+        if (packageVersion != null) {
+          try {
+            final Tarball tarball = tarballSource.get(this, packageVersion);
+            if (tarball != null) {
+              final DefaultStorageFileItem result = new DefaultStorageFileItem(this, request, true, true, tarball);
+              // stash in SHA1 sum as we have it already
+              result.getItemContext().put(StorageFileItem.DIGEST_SHA1_KEY, tarball.getSha1sum());
+              return doCacheItem(result);
+            }
+            throw new ItemNotFoundException(ItemNotFoundException.reasonFor(request, this,
+                "Request cannot be serviced by NPM proxy %s: tarball for package %s version %s not found", this,
+                packageVersion.getName(), packageVersion.getVersion()));
+          }
+          catch (IOException e) {
+            throw new RemoteStorageException("NPM TarballSource service error", e);
+          }
+        }
+        else {
+          throw new ItemNotFoundException(ItemNotFoundException.reasonFor(request, this,
+              "Request cannot be serviced by NPM proxy %s: tarball package not found", this));
+        }
+      }
+      finally {
+        itemUidLock.unlock();
       }
     }
 

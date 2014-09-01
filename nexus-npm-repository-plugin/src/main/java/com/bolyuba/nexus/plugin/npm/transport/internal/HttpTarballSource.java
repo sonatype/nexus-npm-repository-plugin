@@ -98,7 +98,6 @@ public class HttpTarballSource
           return null;
         }
         // TODO: content validation
-        // TODO: eventing?
         return new Tarball(tempFile, packageVersion, downloadedShasum);
       } else {
         // TODO: might be redundant now, but once those logs above go to DEBUG will not
