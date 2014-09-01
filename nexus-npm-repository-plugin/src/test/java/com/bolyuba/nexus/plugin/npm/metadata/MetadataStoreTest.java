@@ -8,6 +8,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
+import org.sonatype.nexus.apachehttpclient.Hc4Provider;
 import org.sonatype.nexus.configuration.application.ApplicationDirectories;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.item.ContentLocator;
@@ -38,16 +39,19 @@ import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 import com.bolyuba.nexus.plugin.npm.proxy.DefaultNpmProxyRepository;
 import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepository;
 import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepositoryConfigurator;
+import com.bolyuba.nexus.plugin.npm.transport.internal.HttpTarballSource;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.io.ByteSource;
 import com.google.common.io.Files;
+import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.skyscreamer.jsonassert.JSONAssert;
 
 import static org.hamcrest.MatcherAssert.*;
@@ -72,6 +76,9 @@ public class MetadataStoreTest
   private ApplicationDirectories applicationDirectories;
 
   @Mock
+  private Hc4Provider hc4Provider;
+
+  @Mock
   private HttpClientManager httpClientManager;
 
   private OrientMetadataStore metadataStore;
@@ -82,15 +89,19 @@ public class MetadataStoreTest
 
   private ProxyMetadataTransport proxyMetadataTransport;
 
+  private HttpTarballSource tarballSource;
+
   @Before
   public void setup() throws Exception {
     BaseUrlHolder.set("http://localhost:8081/nexus");
     tmpDir = util.createTempDir();
 
+    final HttpClient httpClient = HttpClients.createDefault();
+
     when(applicationDirectories.getWorkDirectory(anyString())).thenReturn(tmpDir);
     when(applicationDirectories.getTemporaryDirectory()).thenReturn(tmpDir);
     when(httpClientManager.create(any(ProxyRepository.class), any(RemoteStorageContext.class))).thenReturn(
-        HttpClients.createDefault());
+        httpClient);
 
     metadataStore = new OrientMetadataStore(applicationDirectories);
     metadataParser = new MetadataParser(applicationDirectories.getTemporaryDirectory());
@@ -104,6 +115,9 @@ public class MetadataStoreTest
     };
     metadataService = new MetadataServiceFactoryImpl(metadataStore, metadataParser, proxyMetadataTransport);
 
+    when(hc4Provider.createHttpClient(Mockito.any(RemoteStorageContext.class))).thenReturn(httpClient);
+    tarballSource = new HttpTarballSource(applicationDirectories, hc4Provider);
+
     // not using mock as it would OOM when it tracks invocations, as we work with large files here
     npmHostedRepository = new DefaultNpmHostedRepository(mock(ContentClass.class), mock(
         NpmHostedRepositoryConfigurator.class), metadataService)
@@ -116,7 +130,7 @@ public class MetadataStoreTest
 
     // not using mock as it would OOM when it tracks invocations, as we work with large files here
     npmProxyRepository = new DefaultNpmProxyRepository(mock(ContentClass.class), mock(
-        NpmProxyRepositoryConfigurator.class), metadataService)
+        NpmProxyRepositoryConfigurator.class), metadataService, tarballSource)
     {
       @Override
       public String getId() {
@@ -220,7 +234,7 @@ public class MetadataStoreTest
         NpmRepository.JSON_MIME_TYPE, -1);
     final PackageRequest request = new PackageRequest(new ResourceStoreRequest("/commonjs"));
     npmHostedRepository.getMetadataService()
-        .consumePackageRoot(request, npmHostedRepository.getMetadataService().parsePackageRoot(
+        .consumePackageRoot(npmHostedRepository.getMetadataService().parsePackageRoot(
             request, input));
 
     assertThat(metadataStore.listPackageNames(npmHostedRepository), hasSize(1));
@@ -267,7 +281,7 @@ public class MetadataStoreTest
           NpmRepository.JSON_MIME_TYPE, -1);
       final PackageRequest request = new PackageRequest(new ResourceStoreRequest("/testproject"));
       npmHostedRepository.getMetadataService()
-          .consumePackageRoot(request, npmHostedRepository.getMetadataService().parsePackageRoot(
+          .consumePackageRoot(npmHostedRepository.getMetadataService().parsePackageRoot(
               request, input));
     }
 

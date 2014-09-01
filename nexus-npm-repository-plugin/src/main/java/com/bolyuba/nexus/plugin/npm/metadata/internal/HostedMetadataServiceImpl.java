@@ -51,7 +51,7 @@ public class HostedMetadataServiceImpl
   }
 
   @Override
-  public PackageRoot consumePackageRoot(final PackageRequest request, final PackageRoot packageRoot)
+  public PackageRoot consumePackageRoot(final PackageRoot packageRoot)
       throws IOException
   {
     return metadataGenerator.consumePackageRoot(packageRoot);

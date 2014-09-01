@@ -220,7 +220,7 @@ public class DefaultNpmHostedRepository
                   throw new AccessDeniedException(request, e.getMessage());
                 }
 
-                packageRoot = hostedMetadataService.consumePackageRoot(packageRequest, packageRoot);
+                packageRoot = hostedMetadataService.consumePackageRoot(packageRoot);
 
                 if (!packageRoot.getAttachments().isEmpty()) {
                   for (PackageAttachment attachment : packageRoot.getAttachments().values()) {

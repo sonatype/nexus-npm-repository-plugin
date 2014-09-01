@@ -28,6 +28,11 @@ public class PackageVersion
     return (String) ((Map) getRaw().get("dist")).get("tarball");
   }
 
+  public String getDistShasum() {
+    // TODO: shasum is not even mentioned by spec, but is mostly present?
+    return (String) ((Map) getRaw().get("dist")).get("shasum");
+  }
+
   public String getDistTarballFilename() {
     String tarballUrl = getDistTarball();
     int idx = tarballUrl.lastIndexOf("/");
@@ -42,6 +47,12 @@ public class PackageVersion
   public void setDistTarball(String tarball) {
     checkNotNull(tarball);
     ((Map) getRaw().get("dist")).put("tarball", tarball);
+  }
+
+  public void setDistShasum(String shasum) {
+    // TODO: shasum is not even mentioned by spec, but is mostly present?
+    checkNotNull(shasum);
+    ((Map) getRaw().get("dist")).put("shasum", shasum);
   }
 
   /**
