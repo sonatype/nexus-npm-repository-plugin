@@ -190,7 +190,8 @@ public class DefaultNpmProxyRepository
               // no problem, just continue then
             }
           }
-          return delegateDoRetrieveLocalItem(storeRequest);
+          throw new ItemNotFoundException(
+              reasonFor(storeRequest, this, "No local content for path %s", storeRequest.getRequestPath()));
         } catch (IOException e) {
           throw new LocalStorageException("Metadata service error", e);
         }
