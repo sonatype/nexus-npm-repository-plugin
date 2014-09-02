@@ -23,6 +23,7 @@ import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageVersion;
 import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepository;
 import com.bolyuba.nexus.plugin.npm.transport.Tarball;
+import com.bolyuba.nexus.plugin.npm.transport.TarballRequest;
 import com.bolyuba.nexus.plugin.npm.transport.TarballSource;
 import com.google.common.base.Throwables;
 import org.apache.http.HttpResponse;
@@ -58,12 +59,10 @@ public class HttpTarballSource
   }
 
   @Override
-  public Tarball get(final NpmProxyRepository npmProxyRepository, final PackageVersion packageVersion)
+  public Tarball get(final NpmProxyRepository npmProxyRepository, final TarballRequest tarballRequest)
       throws IOException
   {
-    checkArgument(!packageVersion.isIncomplete(), "Incomplete package version cannot be sourced: %s: %s:%s",
-        npmProxyRepository.getId(), packageVersion.getName(), packageVersion.getVersion());
-    return getTarballFromUrl(npmProxyRepository, packageVersion);
+    return getTarballFromUrl(npmProxyRepository, tarballRequest.getPackageVersion());
   }
 
   private Tarball getTarballFromUrl(final NpmProxyRepository npmProxyRepository, final PackageVersion packageVersion)
@@ -98,7 +97,7 @@ public class HttpTarballSource
           return null;
         }
         // TODO: content validation
-        return new Tarball(tempFile, packageVersion, downloadedShasum);
+        return new Tarball(tempFile, downloadedShasum);
       } else {
         // TODO: might be redundant now, but once those logs above go to DEBUG will not
         log.warn("{} - NPMTarball GET {}: unexpected response: {}", npmProxyRepository.getId(), get.getURI(), httpResponse.getStatusLine());

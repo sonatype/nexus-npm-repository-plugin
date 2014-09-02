@@ -15,5 +15,5 @@ public interface TarballSource
    * checking of remote, as NPM stores the checksum in the metadata (package version), hence, if locally exists
    * the given file, and checksum matches, no need to check on remote for "newer version".
    */
-  Tarball get(NpmProxyRepository npmProxyRepository, PackageVersion packageVersion) throws IOException;
+  Tarball get(NpmProxyRepository npmProxyRepository, TarballRequest tarballRequest) throws IOException;
 }

@@ -2,14 +2,19 @@ package com.bolyuba.nexus.plugin.npm.metadata.internal;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
+
+import org.sonatype.nexus.proxy.ResourceStoreRequest;
 
 import com.bolyuba.nexus.plugin.npm.metadata.PackageRoot;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageVersion;
 import com.bolyuba.nexus.plugin.npm.metadata.ProxyMetadataService;
 import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepository;
+import com.bolyuba.nexus.plugin.npm.transport.TarballRequest;
 import com.google.common.base.Function;
 import com.google.common.collect.Maps;
 
@@ -54,6 +59,7 @@ public class ProxyMetadataServiceImpl
 
   @Override
   public boolean expireMetadataCaches(final PackageRequest request) {
+    checkNotNull(request);
     if (request.isPackage()) {
       final PackageRoot packageRoot = metadataStore.getPackageByName(npmProxyRepository, request.getName());
       if (packageRoot == null) {
@@ -85,7 +91,48 @@ public class ProxyMetadataServiceImpl
   @Nullable
   @Override
   public PackageRoot generateRawPackageRoot(final String packageName) throws IOException {
+    checkNotNull(packageName);
     return mayUpdatePackageRoot(packageName);
+  }
+
+  @Override
+  public PackageRoot consumeRawPackageRoot(final PackageRoot packageRoot) {
+    checkNotNull(packageRoot);
+    return metadataStore.updatePackage(npmProxyRepository, packageRoot);
+  }
+
+  /**
+   * Regex for tarball requests. They are in form of {@code /pkgName/-/pkgName-pkgVersion.tgz}, with a catch, that
+   * pkgVersion might be suffixed by some suffix (ie. "beta", "alpha", etc). Groups in regexp: 1. the "packageName",
+   * 2. the complete filename after "/-/"
+   */
+  private final static Pattern TARBALL_PATH_PATTERN = Pattern
+      .compile("/([[a-z][A-Z][0-9]-_\\.]+)/-/([[a-z][A-Z][0-9]-_\\.]+\\.tgz)");
+
+  @Override
+  public TarballRequest createTarballRequest(final ResourceStoreRequest request) throws IOException {
+    checkNotNull(request);
+    final Matcher matcher = TARBALL_PATH_PATTERN.matcher(request.getRequestPath());
+    if (matcher.matches()) {
+      final String packageName = matcher.group(1);
+      final String tarballFilename = matcher.group(2);
+      final PackageRoot packageRoot = mayUpdatePackageRoot(packageName);
+      if (packageRoot != null) {
+        log.debug("Looking up package {} version for tarball request: {}", packageRoot.getName(),
+            request.getRequestPath());
+        for (PackageVersion version : packageRoot.getVersions().values()) {
+          // TODO: simpler regex with filename matching used for simplicity's sake. Version extracting might be less
+          // robust due to complex regex
+          if (version.getDistTarball().endsWith(tarballFilename)) {
+            log.debug("Package {} version {} matched for tarball request: {}", packageRoot.getName(),
+                version.getVersion(), request.getRequestPath());
+            return new TarballRequest(request, packageRoot, version);
+          }
+        }
+      }
+    }
+    log.debug("Not a tarball request: {}", request.getRequestPath());
+    return null;
   }
 
   @Override

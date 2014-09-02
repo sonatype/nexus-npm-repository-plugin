@@ -1,18 +1,16 @@
 package com.bolyuba.nexus.plugin.npm.proxy;
 
 import java.io.IOException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.content.NpmMimeRulesSource;
 import com.bolyuba.nexus.plugin.npm.metadata.MetadataServiceFactory;
-import com.bolyuba.nexus.plugin.npm.metadata.PackageRoot;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageVersion;
 import com.bolyuba.nexus.plugin.npm.metadata.ProxyMetadataService;
 import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 import com.bolyuba.nexus.plugin.npm.transport.Tarball;
+import com.bolyuba.nexus.plugin.npm.transport.TarballRequest;
 import com.bolyuba.nexus.plugin.npm.transport.TarballSource;
 import com.google.common.base.Strings;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
@@ -36,7 +34,6 @@ import org.sonatype.nexus.proxy.item.DefaultStorageFileItem;
 import org.sonatype.nexus.proxy.item.RepositoryItemUid;
 import org.sonatype.nexus.proxy.item.RepositoryItemUidLock;
 import org.sonatype.nexus.proxy.item.StorageFileItem;
-import org.sonatype.nexus.proxy.item.StorageItem;
 import org.sonatype.nexus.proxy.registry.ContentClass;
 import org.sonatype.nexus.proxy.repository.AbstractProxyRepository;
 import org.sonatype.nexus.proxy.repository.DefaultRepositoryKind;
@@ -60,6 +57,16 @@ import static org.sonatype.nexus.proxy.ItemNotFoundException.reasonFor;
 public class DefaultNpmProxyRepository
         extends AbstractProxyRepository
         implements NpmProxyRepository, Repository {
+
+    /**
+     * Key used in PackageVersion properties to place NX calculated SHA1 sum of tarball.
+     */
+    private static final String TARBALL_NX_SHASUM = "nx.shasum";
+
+    /**
+     * Key to stash under the created tarball reqeust in resource store request context.
+     */
+    private static final String TARBALL_REQUEST = "npm.tarballRequest";
 
     public static final String ROLE_HINT = "npm-proxy";
 
@@ -177,12 +184,19 @@ public class DefaultNpmProxyRepository
             // ignore, will do it standard way if needed
           }
           // this must be tarball, check it out do we have it locally, and if yes, and metadata checksum matches, give it
-          final PackageVersion packageVersion = getPackageVersionForTarballRequest(storeRequest);
-          if (packageVersion != null) {
+          final TarballRequest tarballRequest = getMetadataService().createTarballRequest(storeRequest);
+          if (tarballRequest != null) {
+            // stash it into context if needed to get from remote
+            storeRequest.getRequestContext().put(TARBALL_REQUEST, tarballRequest);
             try {
-              final AbstractStorageItem item = getLocalStorage().retrieveItem(this, storeRequest);
+              final AbstractStorageItem item = delegateDoRetrieveLocalItem(storeRequest);
+              // TODO: explanation: NPM metadata contains SHA1, and we do maintain metadata. Hence, if SHA1 in metadata
+              // matches with item's SHA1, whatever item we have, we know it's the "real thing".
               if (item instanceof StorageFileItem) {
-                if (!Strings.isNullOrEmpty(packageVersion.getDistShasum()) && !packageVersion.getDistShasum().equals(item.getRepositoryItemAttributes().get(StorageFileItem.DIGEST_SHA1_KEY))) {
+                final PackageVersion version = tarballRequest.getPackageVersion();
+                // if metadata contains sha1 and it equals to items sha1, we have it
+                if (!Strings.isNullOrEmpty(version.getDistShasum())
+                    && version.getDistShasum().equals(item.getRepositoryItemAttributes().get(TARBALL_NX_SHASUM))) {
                   // we have it and is up to date (hash matches metadata)
                   item.setRemoteChecked(Long.MAX_VALUE);
                   item.setExpired(false);
@@ -265,13 +279,6 @@ public class DefaultNpmProxyRepository
         return super.doRetrieveLocalItem(storeRequest);
     }
 
-    /**
-     * Regex for tarball requests. They are in form of {@code /pkgName/-/pkgName-pkgVersion.tgz}, with a catch, that
-     * pkgVersion might be suffixed by some suffix (ie. "beta", "alpha", etc). Groups in regexp: 1. the "packageName",
-     * 2. the complete filename after "/-/"
-     */
-    private final static Pattern TARBALL_PATH_PATTERN = Pattern.compile("/([[a-z][A-Z][0-9]-_\\.]+)/-/([[a-z][A-Z][0-9]-_\\.]+\\.tgz)");
-
     @Override
     protected AbstractStorageItem doRetrieveRemoteItem(final ResourceStoreRequest request)
         throws ItemNotFoundException, RemoteAccessException, StorageException
@@ -280,61 +287,32 @@ public class DefaultNpmProxyRepository
       final RepositoryItemUidLock itemUidLock = itemUid.getLock();
       itemUidLock.lock(Action.create);
       try {
-        final PackageVersion packageVersion;
-        try {
-          packageVersion = getPackageVersionForTarballRequest(request);
-        }
-        catch (IOException e) {
-          throw new RemoteStorageException("NPM Metadata service error", e);
-        }
-        if (packageVersion != null) {
-          try {
-            final Tarball tarball = tarballSource.get(this, packageVersion);
-            if (tarball != null) {
-              final DefaultStorageFileItem result = new DefaultStorageFileItem(this, request, true, true, tarball);
-              // stash in SHA1 sum as we have it already
-              result.getItemContext().put(StorageFileItem.DIGEST_SHA1_KEY, tarball.getSha1sum());
-              return doCacheItem(result);
-            }
-            throw new ItemNotFoundException(ItemNotFoundException.reasonFor(request, this,
-                "Request cannot be serviced by NPM proxy %s: tarball for package %s version %s not found", this,
-                packageVersion.getName(), packageVersion.getVersion()));
+        // get the stashed already created tarball request for resource store request
+        final TarballRequest tarballRequest = (TarballRequest) request.getRequestContext().get(TARBALL_REQUEST, false);
+        if (tarballRequest != null) {
+          final Tarball tarball = tarballSource.get(this, tarballRequest);
+          if (tarball != null) {
+            // update the packageRoot document with version's known sha1 sum (this one is calculated by NX, is not the one from metadata)
+            tarballRequest.getPackageVersion().getProperties().put(TARBALL_NX_SHASUM, tarball.getSha1sum());
+            getMetadataService().consumeRawPackageRoot(tarballRequest.getPackageRoot());
+
+            // cache and return tarball wrapped into item
+            final DefaultStorageFileItem result = new DefaultStorageFileItem(this, request, true, true, tarball);
+            result.getRepositoryItemAttributes().put(TARBALL_NX_SHASUM, tarball.getSha1sum());
+            return doCacheItem(result);
           }
-          catch (IOException e) {
-            throw new RemoteStorageException("NPM TarballSource service error", e);
-          }
-        }
-        else {
           throw new ItemNotFoundException(ItemNotFoundException.reasonFor(request, this,
-              "Request cannot be serviced by NPM proxy %s: tarball package not found", this));
+              "Request cannot be serviced by NPM proxy %s: tarball for package %s version %s not found on remote", this,
+             tarballRequest.getPackageVersion().getName(), tarballRequest.getPackageVersion().getVersion()));
         }
+        throw new ItemNotFoundException(ItemNotFoundException.reasonFor(request, this,
+            "Request cannot be serviced by NPM proxy %s: tarball package not found", this));
+      }
+      catch (IOException e) {
+        throw new RemoteStorageException("NPM service error", e);
       }
       finally {
         itemUidLock.unlock();
       }
     }
-
-  /**
-   * Retrieves the corresponding {@link PackageVersion} for given <strong>tarball request</strong>. If not found, or
-   * request is not a tarball request, returns {@code null}.
-   */
-  protected PackageVersion getPackageVersionForTarballRequest(final ResourceStoreRequest request) throws IOException {
-    final Matcher matcher = TARBALL_PATH_PATTERN.matcher(request.getRequestPath());
-    if (matcher.matches()) {
-      final String requestedPackageName = matcher.group(1);
-      final String requestedTarballFilename = matcher.group(2);
-      final PackageRoot packageRoot = getMetadataService().generateRawPackageRoot(requestedPackageName);
-      if (packageRoot != null) {
-        for (PackageVersion version : packageRoot.getVersions().values()) {
-          // TODO: simpler regex and filename matching used for simplicity's sake. Version could be extracted
-          // as it was done in prev PR, but it's probably more fragile than this. Anyway, the requested path contains
-          // the filename, so we can match using endsWith based on packageVersion dist tarball
-          if (version.getDistTarball().endsWith(requestedTarballFilename)) {
-            return version;
-          }
-        }
-      }
-    }
-    return null;
-  }
 }
