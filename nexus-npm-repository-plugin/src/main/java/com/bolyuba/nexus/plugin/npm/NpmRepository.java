@@ -18,5 +18,7 @@ public interface NpmRepository
 
   String NPM_METADATA_SERVICED = "NpmMetadataServiced";
 
+  String NPM_METADATA_NO_SERVICE = "NpmMetadataNoService";
+
   Generator getMetadataService();
 }

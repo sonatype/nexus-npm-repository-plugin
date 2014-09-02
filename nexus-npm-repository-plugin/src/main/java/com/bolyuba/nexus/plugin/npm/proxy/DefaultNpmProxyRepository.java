@@ -127,6 +127,7 @@ public class DefaultNpmProxyRepository
 
     @Override
     protected boolean doExpireProxyCaches(final ResourceStoreRequest request, final WalkerFilter filter) {
+        request.getRequestContext().put(NpmRepository.NPM_METADATA_NO_SERVICE, Boolean.TRUE);
         boolean result = super.doExpireProxyCaches(request, filter);
         try {
           boolean npmResult = proxyMetadataService.expireMetadataCaches(new PackageRequest(request));
@@ -140,6 +141,10 @@ public class DefaultNpmProxyRepository
     @Override
     protected AbstractStorageItem doRetrieveLocalItem(ResourceStoreRequest storeRequest) throws ItemNotFoundException, LocalStorageException {
         try {
+          if (storeRequest.getRequestContext().containsKey(NpmRepository.NPM_METADATA_NO_SERVICE, false)) {
+            // shut down NPM MD+tarball service completely
+            return delegateDoRetrieveLocalItem(storeRequest);
+          }
           try {
             PackageRequest packageRequest = new PackageRequest(storeRequest);
             packageRequest.getStoreRequest().getRequestContext().put(NpmRepository.NPM_METADATA_SERVICED, Boolean.TRUE);
@@ -278,6 +283,12 @@ public class DefaultNpmProxyRepository
     protected AbstractStorageItem doRetrieveRemoteItem(final ResourceStoreRequest request)
         throws ItemNotFoundException, RemoteAccessException, StorageException
     {
+      if (request.getRequestContext().containsKey(NpmRepository.NPM_METADATA_NO_SERVICE, false)) {
+        // shut down NPM MD+tarball service completely
+        throw new ItemNotFoundException(ItemNotFoundException.reasonFor(request, this,
+            "Request shut down NPM proxy for %s", this));
+      }
+
       final RepositoryItemUid itemUid = createUid(request.getRequestPath());
       final RepositoryItemUidLock itemUidLock = itemUid.getLock();
       itemUidLock.lock(Action.create);
