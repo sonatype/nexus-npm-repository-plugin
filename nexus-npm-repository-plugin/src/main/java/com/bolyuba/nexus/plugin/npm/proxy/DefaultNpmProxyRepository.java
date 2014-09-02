@@ -268,6 +268,16 @@ public class DefaultNpmProxyRepository
         } catch (IllegalArgumentException ignore) {
             // do it old style
             return delegateDoCacheItem(item);
+        } finally {
+          // TODO: ugly, improve this
+          if (item instanceof StorageFileItem && ((StorageFileItem)item).getContentLocator() instanceof Tarball) {
+            try {
+              ((Tarball) ((StorageFileItem) item).getContentLocator()).delete();
+            } catch (IOException e) {
+              // supress it
+              log.warn("Cannot delete temporary file:", e);
+            }
+          }
         }
     }
 

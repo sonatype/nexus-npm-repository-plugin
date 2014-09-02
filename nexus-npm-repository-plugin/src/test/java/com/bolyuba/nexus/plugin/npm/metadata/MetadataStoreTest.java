@@ -39,8 +39,14 @@ import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 import com.bolyuba.nexus.plugin.npm.proxy.DefaultNpmProxyRepository;
 import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepository;
 import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepositoryConfigurator;
-import com.bolyuba.nexus.plugin.npm.transport.internal.HttpTarballSource;
+import com.bolyuba.nexus.plugin.npm.transport.TarballSource;
+import com.bolyuba.nexus.plugin.npm.transport.internal.HttpTarballTransport;
+import com.bolyuba.nexus.plugin.npm.transport.internal.Sha1HashPayloadValidator;
+import com.bolyuba.nexus.plugin.npm.transport.internal.SizePayloadValidator;
+import com.bolyuba.nexus.plugin.npm.transport.internal.TarballSourceImpl;
+import com.bolyuba.nexus.plugin.npm.transport.internal.TarballValidator;
 import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.io.ByteSource;
 import com.google.common.io.Files;
@@ -89,7 +95,7 @@ public class MetadataStoreTest
 
   private ProxyMetadataTransport proxyMetadataTransport;
 
-  private HttpTarballSource tarballSource;
+  private TarballSource tarballSource;
 
   @Before
   public void setup() throws Exception {
@@ -116,7 +122,10 @@ public class MetadataStoreTest
     metadataService = new MetadataServiceFactoryImpl(metadataStore, metadataParser, proxyMetadataTransport);
 
     when(hc4Provider.createHttpClient(Mockito.any(RemoteStorageContext.class))).thenReturn(httpClient);
-    tarballSource = new HttpTarballSource(applicationDirectories, hc4Provider);
+
+    final HttpTarballTransport httpTarballTransport = new HttpTarballTransport(hc4Provider);
+
+    tarballSource = new TarballSourceImpl(applicationDirectories, httpTarballTransport, ImmutableMap.<String, TarballValidator>of("size", new SizePayloadValidator(), "sha1", new Sha1HashPayloadValidator()));
 
     // not using mock as it would OOM when it tracks invocations, as we work with large files here
     npmHostedRepository = new DefaultNpmHostedRepository(mock(ContentClass.class), mock(
