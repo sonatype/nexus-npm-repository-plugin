@@ -58,17 +58,12 @@ public class DefaultNpmProxyRepository
         extends AbstractProxyRepository
         implements NpmProxyRepository, Repository {
 
-    /**
-     * Key used in PackageVersion properties to place NX calculated SHA1 sum of tarball.
-     */
-    private static final String TARBALL_NX_SHASUM = "nx.shasum";
+    public static final String ROLE_HINT = "npm-proxy";
 
     /**
-     * Key to stash under the created tarball reqeust in resource store request context.
+     * Key to stash under the created tarball request in resource store request context.
      */
     private static final String TARBALL_REQUEST = "npm.tarballRequest";
-
-    public static final String ROLE_HINT = "npm-proxy";
 
     private final ContentClass contentClass;
 
@@ -196,7 +191,7 @@ public class DefaultNpmProxyRepository
                 final PackageVersion version = tarballRequest.getPackageVersion();
                 // if metadata contains sha1 and it equals to items sha1, we have it
                 if (!Strings.isNullOrEmpty(version.getDistShasum())
-                    && version.getDistShasum().equals(item.getRepositoryItemAttributes().get(TARBALL_NX_SHASUM))) {
+                    && version.getDistShasum().equals(item.getRepositoryItemAttributes().get(PackageVersion.TARBALL_NX_SHASUM))) {
                   // we have it and is up to date (hash matches metadata)
                   item.setRemoteChecked(Long.MAX_VALUE);
                   item.setExpired(false);
@@ -293,12 +288,12 @@ public class DefaultNpmProxyRepository
           final Tarball tarball = tarballSource.get(this, tarballRequest);
           if (tarball != null) {
             // update the packageRoot document with version's known sha1 sum (this one is calculated by NX, is not the one from metadata)
-            tarballRequest.getPackageVersion().getProperties().put(TARBALL_NX_SHASUM, tarball.getSha1sum());
+            tarballRequest.getPackageVersion().getProperties().put(PackageVersion.TARBALL_NX_SHASUM, tarball.getSha1sum());
             getMetadataService().consumeRawPackageRoot(tarballRequest.getPackageRoot());
 
             // cache and return tarball wrapped into item
             final DefaultStorageFileItem result = new DefaultStorageFileItem(this, request, true, true, tarball);
-            result.getRepositoryItemAttributes().put(TARBALL_NX_SHASUM, tarball.getSha1sum());
+            result.getRepositoryItemAttributes().put(PackageVersion.TARBALL_NX_SHASUM, tarball.getSha1sum());
             return doCacheItem(result);
           }
           throw new ItemNotFoundException(ItemNotFoundException.reasonFor(request, this,

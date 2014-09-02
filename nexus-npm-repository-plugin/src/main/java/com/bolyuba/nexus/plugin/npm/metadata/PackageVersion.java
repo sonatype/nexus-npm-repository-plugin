@@ -8,6 +8,11 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class PackageVersion
     extends NpmJson
 {
+  /**
+   * Key used in PackageVersion properties to place NX calculated SHA1 sum of tarball.
+   */
+  public static final String TARBALL_NX_SHASUM = "nx.shasum";
+
   public PackageVersion(final String repositoryId, final Map<String, Object> raw) {
     super(repositoryId, raw);
   }
