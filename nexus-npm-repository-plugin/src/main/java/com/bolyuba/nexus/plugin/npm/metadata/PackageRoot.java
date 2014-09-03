@@ -11,16 +11,21 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class PackageRoot
     extends NpmJson
 {
+  private final Map<String, String> properties;
+
   private final Map<String, PackageVersion> wrappedVersions;
 
   private final Map<String, PackageAttachment> attachments;
 
   public PackageRoot(final String repositoryId, final Map<String, Object> raw) {
     super(repositoryId, raw);
+    this.properties = Maps.newHashMap();
     this.wrappedVersions = Maps.newHashMap();
     this.wrappedVersions.putAll(wrapVersions(raw));
     this.attachments = Maps.newHashMap();
   }
+
+  public Map<String, String> getProperties() { return properties; }
 
   public String getComponentId() {return getRepositoryId() + ":" + getName(); }
 
@@ -89,6 +94,7 @@ public class PackageRoot
   public void overlay(final PackageRoot packageRoot) {
     checkArgument(getComponentId().equals(packageRoot.getComponentId()), "Cannot overlay different package roots!");
     overlay(getRaw(), packageRoot.getRaw()); // this changes underlying raw map directly
+    getProperties().putAll(packageRoot.getProperties()); // this is "shallow" string-string map
     this.wrappedVersions.clear();
     this.wrappedVersions.putAll(wrapVersions(getRaw()));
     this.attachments.clear(); // TODO: is clear needed?

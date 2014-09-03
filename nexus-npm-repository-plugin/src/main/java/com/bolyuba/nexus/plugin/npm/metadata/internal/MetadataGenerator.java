@@ -76,7 +76,7 @@ public class MetadataGenerator
     if (version == null || version.isIncomplete()) {
       return null;
     }
-    filterPackageVersion(version);
+    filterPackageVersion(root, version);
     return version;
   }
 
@@ -86,19 +86,20 @@ public class MetadataGenerator
     packageRoot.getRaw().remove("_id"); // TODO: why? Original code did this too
     packageRoot.getRaw().remove("_rev"); // TODO: why? Original code did this too
     for (PackageVersion packageVersion : packageRoot.getVersions().values()) {
-      filterPackageVersion(packageVersion);
+      filterPackageVersion(packageRoot, packageVersion);
     }
   }
 
-  private void filterPackageVersion(final PackageVersion packageVersion) {
+  private void filterPackageVersion(final PackageRoot packageRoot, final PackageVersion packageVersion) {
     packageVersion.setDistTarball(SimpleFormat
         .format("%s/content/repositories/%s/%s/-/%s", BaseUrlHolder.get(), npmRepository.getId(),
             packageVersion.getName(), packageVersion.getDistTarballFilename()));
     packageVersion.getRaw().remove("_id"); // TODO: why? Original code did this too
     packageVersion.getRaw().remove("_rev"); // TODO: why? Original code did this too
-    if (packageVersion.getProperties().containsKey(PackageVersion.TARBALL_NX_SHASUM)) {
+    final String versionTarballShasum = PackageVersion.TARBALL_NX_SHASUM + "@" + packageVersion.getVersion();
+    if (packageRoot.getProperties().containsKey(versionTarballShasum)) {
       // this publishes proper SHA1 for ALL packages already proxies by NX
-      packageVersion.setDistShasum(packageVersion.getProperties().get(PackageVersion.TARBALL_NX_SHASUM));
+      packageVersion.setDistShasum(packageRoot.getProperties().get(versionTarballShasum));
     }
   }
 
