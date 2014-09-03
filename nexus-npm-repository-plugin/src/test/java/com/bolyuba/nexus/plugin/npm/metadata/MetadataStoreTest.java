@@ -12,7 +12,10 @@ import org.sonatype.nexus.apachehttpclient.Hc4Provider;
 import org.sonatype.nexus.configuration.application.ApplicationDirectories;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.item.ContentLocator;
+import org.sonatype.nexus.proxy.item.DefaultRepositoryItemUid;
 import org.sonatype.nexus.proxy.item.PreparedContentLocator;
+import org.sonatype.nexus.proxy.item.RepositoryItemUid;
+import org.sonatype.nexus.proxy.item.RepositoryItemUidLock;
 import org.sonatype.nexus.proxy.item.StringContentLocator;
 import org.sonatype.nexus.proxy.registry.ContentClass;
 import org.sonatype.nexus.proxy.repository.ProxyRepository;
@@ -127,6 +130,10 @@ public class MetadataStoreTest
 
     tarballSource = new TarballSourceImpl(applicationDirectories, httpTarballTransport, ImmutableMap.<String, TarballValidator>of("size", new SizePayloadValidator(), "sha1", new Sha1HashPayloadValidator()));
 
+    // dummy uid and uidLock
+    final RepositoryItemUid uid = mock(RepositoryItemUid.class);
+    when(uid.getLock()).thenReturn(mock(RepositoryItemUidLock.class));
+
     // not using mock as it would OOM when it tracks invocations, as we work with large files here
     npmHostedRepository = new DefaultNpmHostedRepository(mock(ContentClass.class), mock(
         NpmHostedRepositoryConfigurator.class), metadataService)
@@ -135,6 +142,9 @@ public class MetadataStoreTest
       public String getId() {
         return "hosted";
       }
+
+      @Override
+      public RepositoryItemUid createUid(String path) { return uid; }
     };
 
     // not using mock as it would OOM when it tracks invocations, as we work with large files here
@@ -154,6 +164,9 @@ public class MetadataStoreTest
 
       @Override
       public String getRemoteUrl() { return "http://registry.npmjs.org/"; }
+
+      @Override
+      public RepositoryItemUid createUid(String path) { return uid; }
     };
 
     // not using mock as it would OOM when it tracks invocations, as we work with large files here
