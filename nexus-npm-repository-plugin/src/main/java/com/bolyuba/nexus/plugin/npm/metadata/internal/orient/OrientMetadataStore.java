@@ -185,6 +185,7 @@ public class OrientMetadataStore
     checkNotNull(repository);
     checkNotNull(packageRoot);
     final EntityHandler<PackageRoot> entityHandler = getHandlerFor(PackageRoot.class);
+    // TODO: reuse existing UID lock "/packageName" or introduce new one "/npmMetadata/packageName"?
     final RepositoryItemUidLock lock = repository.createUid(packageRoot.getName()).getLock();
     lock.lock(Action.update);
     try (ODatabaseDocumentTx db = db()) {
