@@ -11,6 +11,8 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.sonatype.nexus.configuration.application.ApplicationDirectories;
+import org.sonatype.nexus.proxy.access.Action;
+import org.sonatype.nexus.proxy.item.RepositoryItemUidLock;
 import org.sonatype.sisu.goodies.lifecycle.LifecycleSupport;
 
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
@@ -183,6 +185,8 @@ public class OrientMetadataStore
     checkNotNull(repository);
     checkNotNull(packageRoot);
     final EntityHandler<PackageRoot> entityHandler = getHandlerFor(PackageRoot.class);
+    final RepositoryItemUidLock lock = repository.createUid(packageRoot.getName()).getLock();
+    lock.lock(Action.update);
     try (ODatabaseDocumentTx db = db()) {
       db.begin();
       try {
@@ -191,6 +195,9 @@ public class OrientMetadataStore
       finally {
         db.commit();
       }
+    }
+    finally {
+      lock.unlock();
     }
   }
 
