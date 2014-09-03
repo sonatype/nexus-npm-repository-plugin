@@ -255,6 +255,10 @@ public class DefaultNpmProxyRepository
 
     @Override
     public AbstractStorageItem doCacheItem(AbstractStorageItem item) throws LocalStorageException {
+        Tarball tarball = null;
+        if (item instanceof StorageFileItem && ((StorageFileItem)item).getContentLocator() instanceof Tarball) {
+          tarball = (Tarball) ((StorageFileItem) item).getContentLocator();
+        }
         try {
             ResourceStoreRequest storeRequest = item.getResourceStoreRequest();
             PackageRequest packageRequest = new PackageRequest(storeRequest);
@@ -269,12 +273,11 @@ public class DefaultNpmProxyRepository
             // do it old style
             return delegateDoCacheItem(item);
         } finally {
-          // TODO: ugly, improve this
-          if (item instanceof StorageFileItem && ((StorageFileItem)item).getContentLocator() instanceof Tarball) {
+          if (tarball != null) {
             try {
-              ((Tarball) ((StorageFileItem) item).getContentLocator()).delete();
+              tarball.delete();
             } catch (IOException e) {
-              // supress it
+              // suppress it but warn
               log.warn("Cannot delete temporary file:", e);
             }
           }
