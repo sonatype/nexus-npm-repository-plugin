@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -20,6 +21,7 @@ import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepository;
 import com.bolyuba.nexus.plugin.npm.transport.Tarball;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableSet;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.HttpClient;
@@ -32,14 +34,27 @@ import org.slf4j.LoggerFactory;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
- * Apache HttpClient backed tarball transport implementation.
+ * Apache HttpClient backed tarball transport implementation. It merely performs a HTTP GET and calculates response
+ * body's SHA1 hash. No retries happen here (except of those at protocol level done by Apache HttpClient itself).
  */
 @Singleton
 @Named
 public class HttpTarballTransport
     extends ComponentSupport
 {
+  /**
+   * Using same log category as remote storage does, to simplify log reading.
+   */
   private static final Logger outboundRequestLog = LoggerFactory.getLogger("remote.storage.outbound");
+
+  /**
+   * Set of HTTP response codes we do NOT want retries to happen:
+   * <ul>
+   * <li>404 - remote does not have it</li>
+   * <li>401, 403 - probably user misconfiguration (remote authc needed or wrong)</li>
+   * </ul>
+   */
+  private static final Set<Integer> NO_RETRIES_RESPONSE_CODES = ImmutableSet.of(404, 401, 403);
 
   private final Hc4Provider hc4Provider;
 
@@ -54,15 +69,13 @@ public class HttpTarballTransport
   {
     final HttpClient httpClient = hc4Provider.createHttpClient(npmProxyRepository.getRemoteStorageContext());
     final HttpGet get = new HttpGet(tarballUri);
-    // TODO: should be DEBUG
-    outboundRequestLog.info("{} - NPMTarball GET {}", npmProxyRepository.getId(), get.getURI());
+    outboundRequestLog.debug("{} - NPMTarball GET {}", npmProxyRepository.getId(), get.getURI());
     final HttpClientContext context = new HttpClientContext();
     context.setAttribute(Hc4Provider.HTTP_CTX_KEY_REPOSITORY, npmProxyRepository);
     get.addHeader("Accept", NpmRepository.TARBALL_MIME_TYPE);
     final HttpResponse httpResponse = httpClient.execute(get, context);
     try {
-      // TODO: should be DEBUG
-      outboundRequestLog.info("{} - NPMTarball GET {} - {}", npmProxyRepository.getId(), get.getURI(),
+      outboundRequestLog.debug("{} - NPMTarball GET {} - {}", npmProxyRepository.getId(), get.getURI(),
           httpResponse.getStatusLine());
       if (httpResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK && httpResponse.getEntity() != null) {
         final MessageDigest md = MessageDigest.getInstance("SHA1");
@@ -74,11 +87,19 @@ public class HttpTarballTransport
         return new Tarball(target, tarballUri, DigesterUtils.getDigestAsString(md.digest()));
       }
       else {
-        // TODO: might be redundant now, but once those logs above go to DEBUG will not
-        log.warn("{} - NPMTarball GET {}: unexpected response: {}", npmProxyRepository.getId(), get.getURI(),
-            httpResponse.getStatusLine());
+        if (NO_RETRIES_RESPONSE_CODES.contains(httpResponse.getStatusLine().getStatusCode())) {
+          log.debug("{} - NPMTarball GET {}: unexpected response: {}", npmProxyRepository.getId(), get.getURI(),
+              httpResponse.getStatusLine());
+          return null;
+        }
+        else {
+          // in my experience, registry my throw many different errors, from 400, to 500 and then on next try
+          // will happily serve the same URL! Hence, we do retry almost all of the responses that are not expected.
+          log.debug("{} - NPMTarball GET {}: unexpected response: {}", npmProxyRepository.getId(), get.getURI(),
+              httpResponse.getStatusLine());
+          throw new IOException("Unexpected response for 'GET " + get.getURI() + "': " + httpResponse.getStatusLine());
+        }
       }
-      return null;
     }
     catch (NoSuchAlgorithmException e) {
       throw Throwables.propagate(e);

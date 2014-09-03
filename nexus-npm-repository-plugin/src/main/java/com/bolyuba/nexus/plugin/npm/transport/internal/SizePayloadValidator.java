@@ -8,6 +8,9 @@ import org.sonatype.sisu.goodies.common.ComponentSupport;
 import com.bolyuba.nexus.plugin.npm.transport.Tarball;
 import com.bolyuba.nexus.plugin.npm.transport.TarballRequest;
 
+/**
+ * Basic validator that refuses tarballs having zero or less length.
+ */
 @Singleton
 @Named
 public class SizePayloadValidator

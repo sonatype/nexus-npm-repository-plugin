@@ -24,7 +24,7 @@ public abstract class GeneratorSupport
   private final Producer producer;
 
   protected GeneratorSupport(final MetadataParser metadataParser) {
-    this.producer = new GeneratorProducerImpl(this, metadataParser);
+    this.producer = new ProducerImpl(this, metadataParser);
   }
 
   @Override

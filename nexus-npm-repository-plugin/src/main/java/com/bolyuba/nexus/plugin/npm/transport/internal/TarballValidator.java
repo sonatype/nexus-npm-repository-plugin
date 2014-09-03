@@ -3,6 +3,9 @@ package com.bolyuba.nexus.plugin.npm.transport.internal;
 import com.bolyuba.nexus.plugin.npm.transport.Tarball;
 import com.bolyuba.nexus.plugin.npm.transport.TarballRequest;
 
+/**
+ * Tarball validator, validates the tarball content and/or it's properties.
+ */
 public interface TarballValidator
 {
   public enum Result

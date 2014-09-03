@@ -9,8 +9,9 @@ import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.proxy.DefaultNpmProxyRepository;
 
 /**
- * Tarball with it's freshly calculated SHA1 hash backed by a temp file. Temporary file deletion should be taken with
- * care, ie. once it enters local storage the file should be deleted. See {@link DefaultNpmProxyRepository#doCacheItem(AbstractStorageItem)}
+ * Tarball with it's freshly calculated SHA1 hash backed by a file. If temporary files used, the temporary file
+ * deletion should be taken with care, ie. once it enters local storage the file should be deleted. See {@link
+ * DefaultNpmProxyRepository#doCacheItem(AbstractStorageItem)}
  * method.
  */
 public class Tarball

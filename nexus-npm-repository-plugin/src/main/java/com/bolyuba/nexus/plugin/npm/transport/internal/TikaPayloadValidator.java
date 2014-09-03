@@ -17,6 +17,9 @@ import com.google.common.base.Throwables;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+/**
+ * Tika based validator, uses MIME magic bytes of the content itself to figure out what content is.
+ */
 @Singleton
 @Named
 public class TikaPayloadValidator

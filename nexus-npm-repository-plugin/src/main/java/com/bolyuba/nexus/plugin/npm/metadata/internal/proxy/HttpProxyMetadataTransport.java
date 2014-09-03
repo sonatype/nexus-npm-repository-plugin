@@ -58,10 +58,9 @@ public class HttpProxyMetadataTransport
 
   /**
    * Performs a HTTP GET to fetch the registry root. Note: by testing on my mac (MBP 2012 SSD), seems OrientDB is
-   * "slow"
-   * to consume the streamed HTTP response (ie. to push it immediately into database, maintaining indexes etc). Hence,
-   * we save the response JSON to temp file and parse it from there to not have remote registry HTTP Server give up
-   * on connection with us.
+   * "slow" to consume the streamed HTTP response (ie. to push it immediately into database, maintaining indexes etc).
+   * Hence, we save the response JSON to temp file and parse it from there to not have remote registry HTTP Server give
+   * up on connection with us.
    */
   @Override
   public PackageRootIterator fetchRegistryRoot(final NpmProxyRepository npmProxyRepository) throws IOException {
@@ -70,8 +69,7 @@ public class HttpProxyMetadataTransport
     try {
       final HttpGet get = new HttpGet(
           buildUri(npmProxyRepository, "-/all")); // TODO: this in NPM specific, might try both root and NPM api
-      // TODO: during devel INFO, should be DEBUG
-      outboundRequestLog.info("{} - NPM GET {}", npmProxyRepository.getId(), get.getURI());
+      outboundRequestLog.debug("{} - NPM GET {}", npmProxyRepository.getId(), get.getURI());
       get.addHeader("accept", NpmRepository.JSON_MIME_TYPE);
       final HttpResponse httpResponse = httpClient.execute(get);
       try {
@@ -80,7 +78,8 @@ public class HttpProxyMetadataTransport
             httpResponse.getStatusLine());
         if (httpResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
           final File tempFile = File
-              .createTempFile(npmProxyRepository.getId() + "-root", "temp.json", metadataParser.getTemporaryDirectory());
+              .createTempFile(npmProxyRepository.getId() + "-root", "temp.json",
+                  metadataParser.getTemporaryDirectory());
           try (final BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tempFile))) {
             httpResponse.getEntity().writeTo(bos);
             bos.flush();
@@ -112,8 +111,7 @@ public class HttpProxyMetadataTransport
         npmProxyRepository.getRemoteStorageContext());
     try {
       final HttpGet get = new HttpGet(buildUri(npmProxyRepository, packageName));
-      // TODO: during devel INFO, should be DEBUG
-      outboundRequestLog.info("{} - NPM GET {}", npmProxyRepository.getId(), get.getURI());
+      outboundRequestLog.debug("{} - NPM GET {}", npmProxyRepository.getId(), get.getURI());
       get.addHeader("accept", NpmRepository.JSON_MIME_TYPE);
       if (expired != null && expired.getProperties().containsKey(PROP_ETAG)) {
         get.addHeader("if-none-match", expired.getProperties().get(PROP_ETAG));

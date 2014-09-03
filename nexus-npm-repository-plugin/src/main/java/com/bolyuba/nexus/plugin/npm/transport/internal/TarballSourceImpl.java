@@ -62,33 +62,41 @@ public class TarballSourceImpl
     for (int i = 0; i < fetchRetries; i++) {
       log.debug("Retry {}/{} for {}@{} tarball...", i, fetchRetries, tarballRequest.getPackageVersion().getName(),
           tarballRequest.getPackageVersion().getVersion());
-      Tarball tarball = tarballTransport
-          .getTarballForVersion(npmProxyRepository, tempFile, tarballRequest.getPackageVersion().getDistTarball());
-      if (tarball == null) {
-        return null;
-      }
-      for (TarballValidator validator : validators.values()) {
-        final Result result = validator.validate(tarballRequest, tarball);
-        if (log.isDebugEnabled()) { // lot of acrobatics, better guard it
-          log.debug("Validated tarball {}@{} :: {} found '{}' by validator {}",
+      try {
+        Tarball tarball = tarballTransport
+            .getTarballForVersion(npmProxyRepository, tempFile, tarballRequest.getPackageVersion().getDistTarball());
+        if (tarball == null) {
+          log.debug("Tarball for {}@{} not found on {}",
               tarballRequest.getPackageVersion().getName(),
               tarballRequest.getPackageVersion().getVersion(),
-              tarball.getOriginUrl(),
-              result.name(),
-              validator.getClass().getSimpleName());
+              tarballRequest.getPackageVersion().getDistTarball());
+          return null;
         }
-        if (result == Result.INVALID) {
-          log.warn("Invalid tarball for {}@{} from {} detected by {}",
-              tarballRequest.getPackageVersion().getName(),
-              tarballRequest.getPackageVersion().getVersion(),
-              tarball.getOriginUrl(),
-              validator.getClass().getSimpleName());
-          tarball.delete();
-          tarball = null;
-          continue;
+        for (TarballValidator validator : validators.values()) {
+          final Result result = validator.validate(tarballRequest, tarball);
+          if (log.isDebugEnabled()) { // lot of acrobatics, better guard it
+            log.debug("Validated tarball {}@{} :: {} found '{}' by validator {}",
+                tarballRequest.getPackageVersion().getName(),
+                tarballRequest.getPackageVersion().getVersion(),
+                tarball.getOriginUrl(),
+                result.name(),
+                validator.getClass().getSimpleName());
+          }
+          if (result == Result.INVALID) {
+            tarball.delete();
+            throw new IOException("Invalid content detected: " + validator.getClass().getSimpleName());
+          }
         }
+        return tarball;
       }
-      return tarball;
+      catch (IOException e) {
+        // note and retry
+        log.warn("Fetch {}/{} failed for {}@{} tarball: {}",
+            i, fetchRetries,
+            tarballRequest.getPackageVersion().getName(),
+            tarballRequest.getPackageVersion().getVersion(),
+            String.valueOf(e));
+      }
     }
     return null;
   }

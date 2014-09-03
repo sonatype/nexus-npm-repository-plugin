@@ -8,6 +8,10 @@ import org.sonatype.sisu.goodies.common.ComponentSupport;
 import com.bolyuba.nexus.plugin.npm.transport.Tarball;
 import com.bolyuba.nexus.plugin.npm.transport.TarballRequest;
 
+/**
+ * Validator that based on expected and calculated (during transport) SHA1 hashes decides is content corrupted or not
+ * (invalid or valid).
+ */
 @Singleton
 @Named
 public class Sha1HashPayloadValidator

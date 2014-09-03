@@ -15,15 +15,15 @@ import static com.google.common.base.Preconditions.checkNotNull;
 /**
  * Producer of "raw" streamed content from {@link Generator}s.
  */
-public class GeneratorProducerImpl
+public class ProducerImpl
     implements Producer
 {
   private final Generator generator;
 
   private final MetadataParser metadataParser;
 
-  public GeneratorProducerImpl(final Generator generator,
-                               final MetadataParser metadataParser)
+  public ProducerImpl(final Generator generator,
+                      final MetadataParser metadataParser)
   {
     this.generator = checkNotNull(generator);
     this.metadataParser = checkNotNull(metadataParser);
