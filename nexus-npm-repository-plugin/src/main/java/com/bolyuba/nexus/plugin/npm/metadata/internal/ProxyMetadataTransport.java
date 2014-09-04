@@ -2,6 +2,8 @@ package com.bolyuba.nexus.plugin.npm.metadata.internal;
 
 import java.io.IOException;
 
+import javax.annotation.Nullable;
+
 import com.bolyuba.nexus.plugin.npm.metadata.PackageRoot;
 import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepository;
 
@@ -23,5 +25,5 @@ public interface ProxyMetadataTransport
    * is returned.
    */
   PackageRoot fetchPackageRoot(final NpmProxyRepository npmProxyRepository, final String packageName,
-                               final PackageRoot expired) throws IOException;
+                               final @Nullable PackageRoot expired) throws IOException;
 }
