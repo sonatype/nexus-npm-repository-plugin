@@ -3,12 +3,12 @@ package com.bolyuba.nexus.plugin.npm.hosted;
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.internal.NpmMimeRulesSource;
-import com.bolyuba.nexus.plugin.npm.metadata.HostedMetadataService;
-import com.bolyuba.nexus.plugin.npm.metadata.MetadataServiceFactory;
-import com.bolyuba.nexus.plugin.npm.metadata.PackageAttachment;
-import com.bolyuba.nexus.plugin.npm.metadata.PackageRoot;
-import com.bolyuba.nexus.plugin.npm.metadata.PackageVersion;
-import com.bolyuba.nexus.plugin.npm.metadata.PackageRequest;
+import com.bolyuba.nexus.plugin.npm.service.HostedMetadataService;
+import com.bolyuba.nexus.plugin.npm.service.MetadataServiceFactory;
+import com.bolyuba.nexus.plugin.npm.service.PackageAttachment;
+import com.bolyuba.nexus.plugin.npm.service.PackageRoot;
+import com.bolyuba.nexus.plugin.npm.service.PackageVersion;
+import com.bolyuba.nexus.plugin.npm.service.PackageRequest;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.eclipse.sisu.Description;
 
