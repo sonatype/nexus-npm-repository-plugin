@@ -4,8 +4,6 @@ import java.io.IOException;
 
 import org.sonatype.nexus.proxy.item.ContentLocator;
 
-import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
-
 /**
  * Metadata consumer that consumes "raw", probably streamed input of a package root.
  */

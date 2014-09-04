@@ -15,7 +15,7 @@ import com.bolyuba.nexus.plugin.npm.group.NpmGroupRepository;
 import com.bolyuba.nexus.plugin.npm.metadata.GroupMetadataService;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageRoot;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageVersion;
-import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
+import com.bolyuba.nexus.plugin.npm.metadata.PackageRequest;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 

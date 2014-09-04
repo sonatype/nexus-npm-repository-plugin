@@ -10,7 +10,7 @@ import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepository;
 import com.bolyuba.nexus.plugin.npm.metadata.HostedMetadataService;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageRoot;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageVersion;
-import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
+import com.bolyuba.nexus.plugin.npm.metadata.PackageRequest;
 
 import static com.google.common.base.Preconditions.checkArgument;
 

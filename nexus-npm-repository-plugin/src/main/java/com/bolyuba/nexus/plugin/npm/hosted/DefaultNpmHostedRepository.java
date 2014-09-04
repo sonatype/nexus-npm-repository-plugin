@@ -8,7 +8,7 @@ import com.bolyuba.nexus.plugin.npm.metadata.MetadataServiceFactory;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageAttachment;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageRoot;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageVersion;
-import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
+import com.bolyuba.nexus.plugin.npm.metadata.PackageRequest;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.eclipse.sisu.Description;
 

@@ -12,7 +12,7 @@ import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageRoot;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageVersion;
 import com.bolyuba.nexus.plugin.npm.metadata.ProxyMetadataService;
-import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
+import com.bolyuba.nexus.plugin.npm.metadata.PackageRequest;
 import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepository;
 import com.bolyuba.nexus.plugin.npm.transport.TarballRequest;
 import com.google.common.base.Function;

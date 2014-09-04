@@ -8,7 +8,7 @@ import org.sonatype.nexus.proxy.item.ContentLocator;
 
 import com.bolyuba.nexus.plugin.npm.metadata.Generator;
 import com.bolyuba.nexus.plugin.npm.metadata.Producer;
-import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
+import com.bolyuba.nexus.plugin.npm.metadata.PackageRequest;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

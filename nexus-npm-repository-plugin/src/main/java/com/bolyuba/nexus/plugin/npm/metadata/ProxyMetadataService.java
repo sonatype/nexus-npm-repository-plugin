@@ -6,7 +6,6 @@ import javax.annotation.Nullable;
 
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
 
-import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 import com.bolyuba.nexus.plugin.npm.transport.TarballRequest;
 
 /**

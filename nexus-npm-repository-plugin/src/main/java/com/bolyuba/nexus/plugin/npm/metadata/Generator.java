@@ -5,7 +5,6 @@ import java.io.IOException;
 import javax.annotation.Nullable;
 
 import com.bolyuba.nexus.plugin.npm.metadata.internal.PackageRootIterator;
-import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 
 /**
  * Metadata generator that generates entities to be sent downstream to clint.

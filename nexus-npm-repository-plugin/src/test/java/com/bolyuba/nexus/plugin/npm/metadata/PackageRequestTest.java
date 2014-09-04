@@ -1,6 +1,6 @@
-package com.bolyuba.nexus.plugin.npm.pkg;
+package com.bolyuba.nexus.plugin.npm.metadata;
 
-import com.bolyuba.nexus.plugin.npm.NpmRepository;
+import com.bolyuba.nexus.plugin.npm.metadata.PackageRequest;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;

@@ -1,8 +1,10 @@
-package com.bolyuba.nexus.plugin.npm.pkg;
+package com.bolyuba.nexus.plugin.npm.metadata;
 
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import com.bolyuba.nexus.plugin.npm.metadata.PackageRequest.PackageCoordinates;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
