@@ -109,6 +109,7 @@ public class ProxyMetadataServiceImpl
   private final static Pattern TARBALL_PATH_PATTERN = Pattern
       .compile("/([[a-z][A-Z][0-9]-_\\.]+)/-/([[a-z][A-Z][0-9]-_\\.]+\\.tgz)");
 
+  @Nullable
   @Override
   public TarballRequest createTarballRequest(final ResourceStoreRequest request) throws IOException {
     checkNotNull(request);

@@ -19,11 +19,12 @@ public interface ProxyMetadataTransport
   PackageRootIterator fetchRegistryRoot(final NpmProxyRepository npmProxyRepository) throws IOException;
 
   /**
-   * Fetches one single package root of the proxied {@link NpmProxyRepository}. Supplied reoository and package name
+   * Fetches one single package root of the proxied {@link NpmProxyRepository}. Supplied repository and package name
    * must not be {@code null}s, while the expired packageRoot might be {@code null}. If present, metadata from it
    * like ETag will be used to make a "conditional GET", and if remote unchanged, the passed in expired instance
-   * is returned.
+   * is returned. If package not found or cannot be fetched for any reason, {@code null} is returned.
    */
+  @Nullable
   PackageRoot fetchPackageRoot(final NpmProxyRepository npmProxyRepository, final String packageName,
                                final @Nullable PackageRoot expired) throws IOException;
 }

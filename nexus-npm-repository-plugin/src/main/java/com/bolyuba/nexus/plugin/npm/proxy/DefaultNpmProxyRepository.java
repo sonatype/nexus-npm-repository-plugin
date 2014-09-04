@@ -127,6 +127,7 @@ public class DefaultNpmProxyRepository
 
     @Override
     protected boolean doExpireProxyCaches(final ResourceStoreRequest request, final WalkerFilter filter) {
+        // for Walker to operate, we must shut down the metadata service
         request.getRequestContext().put(NpmRepository.NPM_METADATA_NO_SERVICE, Boolean.TRUE);
         boolean result = super.doExpireProxyCaches(request, filter);
         try {

@@ -41,5 +41,6 @@ public interface ProxyMetadataService
    * request path is not for a tarball request), or no package or corresponding version is found, {@code null} is
    * returned to signal that request is not a tarball request.
    */
+  @Nullable
   TarballRequest createTarballRequest(ResourceStoreRequest request) throws IOException;
 }
