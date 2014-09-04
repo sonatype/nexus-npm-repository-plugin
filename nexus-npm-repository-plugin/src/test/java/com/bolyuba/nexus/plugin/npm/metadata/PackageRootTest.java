@@ -44,26 +44,32 @@ public class PackageRootTest
     final Map<String, Object> commonjs2Map = objectMapper
         .readValue(util.resolveFile("src/test/npm/ROOT_commonjs_v2.json"), new TypeReference<Map<String, Object>>() {});
     final PackageRoot commonjs2 = new PackageRoot("repo", commonjs2Map);
+    commonjs2.getProperties().put("flag", "2");
 
     final Map<String, Object> commonjs3Map = objectMapper
         .readValue(util.resolveFile("src/test/npm/ROOT_commonjs_vIncomplete.json"),
             new TypeReference<Map<String, Object>>() {});
     final PackageRoot commonjs3 = new PackageRoot("repo", commonjs3Map);
+    commonjs3.getProperties().put("flag", "3");
 
     assertThat(commonjs1.getComponentId(), equalTo(commonjs2.getComponentId()));
     assertThat(commonjs1.getVersions().keySet(), hasItem("0.0.1"));
     assertThat(commonjs1.isIncomplete(), is(false));
+    assertThat(commonjs1.getProperties().entrySet(), empty());
 
     commonjs1.overlay(commonjs2);
 
     assertThat(commonjs1.getComponentId(), equalTo(commonjs2.getComponentId()));
     assertThat(commonjs1.getVersions().keySet(), hasItems("0.0.1", "0.0.2"));
     assertThat(commonjs1.isIncomplete(), is(false));
+    assertThat(commonjs1.getProperties().entrySet(), hasSize(1));
+    assertThat(commonjs1.getProperties(), hasEntry("flag", "2"));
 
     commonjs1.overlay(commonjs3);
 
     assertThat(commonjs1.getVersions().keySet(), hasItems("0.0.1", "0.0.2", "0.0.3"));
     assertThat(commonjs1.isIncomplete(), is(true));
+    assertThat(commonjs1.getProperties(), hasEntry("flag", "3"));
 
     // objectMapper.writeValue(System.out, commonjs1.getRaw());
   }
