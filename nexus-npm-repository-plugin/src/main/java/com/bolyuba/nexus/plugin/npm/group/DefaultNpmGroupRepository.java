@@ -23,7 +23,7 @@ import org.sonatype.nexus.proxy.repository.GroupRepository;
 import org.sonatype.nexus.proxy.repository.RepositoryKind;
 
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
-import com.bolyuba.nexus.plugin.npm.content.NpmMimeRulesSource;
+import com.bolyuba.nexus.plugin.npm.internal.NpmMimeRulesSource;
 import com.bolyuba.nexus.plugin.npm.metadata.GroupMetadataService;
 import com.bolyuba.nexus.plugin.npm.metadata.MetadataServiceFactory;
 import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;

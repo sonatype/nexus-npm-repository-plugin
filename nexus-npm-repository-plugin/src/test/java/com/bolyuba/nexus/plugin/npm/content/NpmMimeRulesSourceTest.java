@@ -1,6 +1,7 @@
 package com.bolyuba.nexus.plugin.npm.content;
 
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
+import com.bolyuba.nexus.plugin.npm.internal.NpmMimeRulesSource;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 

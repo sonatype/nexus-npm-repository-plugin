@@ -2,7 +2,7 @@ package com.bolyuba.nexus.plugin.npm;
 
 import org.sonatype.nexus.proxy.repository.Repository;
 
-import com.bolyuba.nexus.plugin.npm.content.NpmMimeRulesSource;
+import com.bolyuba.nexus.plugin.npm.internal.NpmMimeRulesSource;
 import com.bolyuba.nexus.plugin.npm.metadata.Generator;
 
 /**

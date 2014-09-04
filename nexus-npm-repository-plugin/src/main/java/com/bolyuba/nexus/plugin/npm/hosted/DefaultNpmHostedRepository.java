@@ -2,7 +2,7 @@ package com.bolyuba.nexus.plugin.npm.hosted;
 
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
-import com.bolyuba.nexus.plugin.npm.content.NpmMimeRulesSource;
+import com.bolyuba.nexus.plugin.npm.internal.NpmMimeRulesSource;
 import com.bolyuba.nexus.plugin.npm.metadata.HostedMetadataService;
 import com.bolyuba.nexus.plugin.npm.metadata.MetadataServiceFactory;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageAttachment;
@@ -224,10 +224,17 @@ public class DefaultNpmHostedRepository
 
                 if (!packageRoot.getAttachments().isEmpty()) {
                   for (PackageAttachment attachment : packageRoot.getAttachments().values()) {
-                    final ResourceStoreRequest attachmentRequest = new ResourceStoreRequest(request);
-                    attachmentRequest.setRequestPath(packageRequest.getPath() + RepositoryItemUid.PATH_SEPARATOR + NPM_REGISTRY_SPECIAL +
-                        RepositoryItemUid.PATH_SEPARATOR + attachment.getName());
-                    super.storeItem(attachmentRequest, attachment.getContent(), userAttributes);
+                    try {
+                      final ResourceStoreRequest attachmentRequest = new ResourceStoreRequest(request);
+                      attachmentRequest.setRequestPath(
+                          packageRequest.getPath() + RepositoryItemUid.PATH_SEPARATOR + NPM_REGISTRY_SPECIAL +
+                              RepositoryItemUid.PATH_SEPARATOR + attachment.getName());
+                      super.storeItem(attachmentRequest, attachment.getContent(), userAttributes);
+                    }
+                    finally {
+                      // delete temporary files backing attachment
+                      attachment.delete();
+                    }
                   }
                 }
             } finally {

@@ -1,4 +1,4 @@
-package com.bolyuba.nexus.plugin.npm.content;
+package com.bolyuba.nexus.plugin.npm.internal;
 
 import org.sonatype.nexus.mime.MimeRulesSource;
 

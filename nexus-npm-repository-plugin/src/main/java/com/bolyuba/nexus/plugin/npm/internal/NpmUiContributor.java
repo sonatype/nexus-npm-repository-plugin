@@ -1,4 +1,4 @@
-package com.bolyuba.nexus.plugin.npm.ui;
+package com.bolyuba.nexus.plugin.npm.internal;
 
 import com.bolyuba.nexus.plugin.npm.NpmPlugin;
 import org.sonatype.nexus.plugins.ui.contribution.UiContributorSupport;
