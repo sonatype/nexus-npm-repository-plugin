@@ -312,8 +312,9 @@ public class DefaultNpmProxyRepository
           final Tarball tarball = tarballSource.get(this, tarballRequest);
           if (tarball != null) {
             // update the packageRoot document with version's known sha1 sum (this one is calculated by NX, is not the one from metadata)
-            // TODO: keying spread across! Fix this
-            tarballRequest.getPackageRoot().getProperties().put(PackageVersion.TARBALL_NX_SHASUM + "@" + tarballRequest.getPackageVersion().getVersion(), tarball.getSha1sum());
+            tarballRequest.getPackageRoot().getProperties().put(
+                PackageVersion.createShasumVersionKey(tarballRequest.getPackageVersion().getVersion()),
+                tarball.getSha1sum());
             getMetadataService().consumeRawPackageRoot(tarballRequest.getPackageRoot());
 
             // cache and return tarball wrapped into item

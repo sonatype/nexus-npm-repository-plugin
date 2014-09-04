@@ -96,7 +96,7 @@ public class MetadataGenerator
             packageVersion.getName(), packageVersion.getDistTarballFilename()));
     packageVersion.getRaw().remove("_id"); // TODO: why? Original code did this too
     packageVersion.getRaw().remove("_rev"); // TODO: why? Original code did this too
-    final String versionTarballShasum = PackageVersion.TARBALL_NX_SHASUM + "@" + packageVersion.getVersion();
+    final String versionTarballShasum = PackageVersion.createShasumVersionKey(packageVersion.getVersion());
     if (packageRoot.getProperties().containsKey(versionTarballShasum)) {
       // this publishes proper SHA1 for ALL packages already proxies by NX
       packageVersion.setDistShasum(packageRoot.getProperties().get(versionTarballShasum));

@@ -2,6 +2,8 @@ package com.bolyuba.nexus.plugin.npm.metadata;
 
 import java.util.Map;
 
+import com.google.common.base.Strings;
+
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -9,9 +11,17 @@ public class PackageVersion
     extends NpmJson
 {
   /**
-   * Key used in PackageVersion properties to place NX calculated SHA1 sum of tarball.
+   * Key used in PackageRoot properties to place NX calculated SHA1 sum of tarball.
    */
   public static final String TARBALL_NX_SHASUM = "nx.shasum";
+
+  /**
+   * Creates a version specific key for SHA1, to be store in packageRoot properties (parent of all versions).
+   */
+  public static String createShasumVersionKey(final String version) {
+    checkArgument(!Strings.isNullOrEmpty(version), "Version cannot be null or empty");
+    return TARBALL_NX_SHASUM + "@" + version;
+  }
 
   public PackageVersion(final String repositoryId, final Map<String, Object> raw) {
     super(repositoryId, raw);
