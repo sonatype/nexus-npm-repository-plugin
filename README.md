@@ -14,7 +14,6 @@ These are the relevant branches
 Other branches:
 
 * [master](https://github.com/sonatype/nexus-npm-repository-plugin/tree/master) synced to upstream (outdated currently)
-* [sonatype-master](https://github.com/sonatype/nexus-npm-repository-plugin/tree/sonatype-master), (outdated currently, to be dropped)
 
 *To build latest and greatest Nexus npm plugin you need to checkout the [nexus-2.10.x](https://github.com/sonatype/nexus-npm-repository-plugin/tree/nexus-2.10.x) branch and build from it.*
 
